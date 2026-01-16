@@ -4,16 +4,17 @@ import PyPDF2
 from docx import Document
 from io import BytesIO
 
-# ၁။ နောက်ခံ ခဲရောင်နု နှင့် စာသားအရောင်များ ပြင်ဆင်ခြင်း
+# ၁။ UI ပိုင်း ပြင်ဆင်ခြင်း
 st.set_page_config(page_title="AI PDF Translator", layout="wide")
 
+# CSS ဖြင့် အလှဆင်ခြင်း (အမှားပြင်ဆင်ပြီး)
 st.markdown("""
     <style>
     .stApp {
-        background-color: #f0f2f6; /* ခဲရောင်နု နောက်ခံ */
+        background-color: #f0f2f6;
     }
     .main-title {
-        color: #00BFFF; /* အပြာနုရောင် ခေါင်းစဉ် */
+        color: #00BFFF;
         font-size: 40px;
         font-weight: bold;
         text-align: center;
@@ -24,26 +25,24 @@ st.markdown("""
         text-align: center;
     }
     </style>
-    """, unsafe_allow_html=True) # ဒီနေရာကို ပြင်လိုက်ပါပြီ
+    """, unsafe_allow_html=True)
 
-# ၂။ ခေါင်းစဉ်ကို အပြာနုရောင်ဖြင့် ဖော်ပြခြင်း
 st.markdown('<p class="main-title">English PDF To Myanmar</p>', unsafe_allow_html=True)
 
-# ၃။ API Key ထည့်ရန် Box
+# ၂။ API Key ထည့်ရန် Box
 gemini_key = st.text_input("Google API Key ကို ထည့်ပါ", type="password")
-
-# ၄။ VPN သတိပေးစာကို Key Box အောက်တွင် ထည့်ခြင်း
 st.markdown('<p class="vpn-warning">⚠️ မြန်မာနိုင်ငံမှ အသုံးပြုပါက USA သို့မဟုတ် Singapore VPN ဖွင့်ပေးပါရန်</p>', unsafe_allow_html=True)
 
 def translate_with_gemini(text, key):
     try:
         genai.configure(api_key=key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Model နာမည်ကို models/ ထည့်၍ ပြင်ဆင်ခြင်း
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
         
         prompt = (
-            f"You are a professional translator. Translate the following English text "
-            f"into natural and fluent Myanmar (Burmese) prose. Use modern vocabulary. "
-            f"Text: {text}"
+            f"You are a professional English-to-Myanmar translator. "
+            f"Translate the following text into natural, smooth, and elegant Myanmar prose. "
+            f"Avoid literal translation. Text: {text}"
         )
         
         response = model.generate_content(prompt)
@@ -67,6 +66,7 @@ if gemini_key:
             if text:
                 result = translate_with_gemini(text, gemini_key)
                 
+                # Word ထဲသို့ စာမျက်နှာခေါင်းစဉ်နှင့် အဖြေထည့်ခြင်း
                 p = doc.add_paragraph()
                 run = p.add_run(f"--- Page {i+1} ---")
                 run.bold = True
@@ -74,6 +74,7 @@ if gemini_key:
             
             bar.progress((i + 1) / num_pages)
         
+        # Word File ထုတ်ပေးခြင်း
         bio = BytesIO()
         doc.save(bio)
         st.success("ဘာသာပြန်ခြင်း ပြီးပါပြီ!")
