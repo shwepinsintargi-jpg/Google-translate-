@@ -1,4 +1,4 @@
 streamlit
-groq
+googletrans-py
 PyPDF2
 python-docx
