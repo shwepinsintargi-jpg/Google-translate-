@@ -9,6 +9,7 @@ uploaded_file = st.file_uploader("PDF ဖိုင်ရွေးပါ", type="
 
 if uploaded_file:
     if st.button("ဘာသာပြန်မည်"):
+        # Translator ကို စတင်သတ်မှတ်ခြင်း
         translator = Translator()
         pdf_reader = PyPDF2.PdfReader(uploaded_file)
         full_text = ""
@@ -20,12 +21,13 @@ if uploaded_file:
             text = page.extract_text()
             if text:
                 try:
+                    # translator.translate ဟု အပြည့်အစုံရေးရပါမည်
                     res = translator.translate(text, src='en', dest='my')
                     full_text += f"--- Page {i+1} ---\n{res.text}\n\n"
-                except:
-                    full_text += f"--- Page {i+1} ---\n{text}\n\n"
+                except Exception as e:
+                    full_text += f"--- Page {i+1} (Error) ---\n{text}\n\n"
+            
             bar.progress((i + 1) / num_pages)
             
         st.success("ဘာသာပြန်ခြင်း ပြီးပါပြီ!")
         st.download_button("ရလဒ်ရယူရန်", full_text, "translated.txt")
-
