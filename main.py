@@ -24,7 +24,7 @@ st.markdown("""
         text-align: center;
     }
     </style>
-    """, unsafe_allow_stdio=True)
+    """, unsafe_allow_html=True) # ဒီနေရာကို ပြင်လိုက်ပါပြီ
 
 # ၂။ ခေါင်းစဉ်ကို အပြာနုရောင်ဖြင့် ဖော်ပြခြင်း
 st.markdown('<p class="main-title">English PDF To Myanmar</p>', unsafe_allow_html=True)
@@ -67,7 +67,6 @@ if gemini_key:
             if text:
                 result = translate_with_gemini(text, gemini_key)
                 
-                # Word ထဲသို့ စာမျက်နှာအလိုက် ထည့်သွင်းခြင်း
                 p = doc.add_paragraph()
                 run = p.add_run(f"--- Page {i+1} ---")
                 run.bold = True
@@ -75,7 +74,6 @@ if gemini_key:
             
             bar.progress((i + 1) / num_pages)
         
-        # Word File ထုတ်ပေးခြင်း
         bio = BytesIO()
         doc.save(bio)
         st.success("ဘာသာပြန်ခြင်း ပြီးပါပြီ!")
