@@ -2,5 +2,3 @@ streamlit
 googletrans-py
 PyPDF2
 python-docx
-fpdf2
-
