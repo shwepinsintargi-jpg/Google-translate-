@@ -1,17 +1,20 @@
 import streamlit as st
-from googletrans import Translator
+from groq import Groq
 import PyPDF2
 from docx import Document
 from io import BytesIO
 
-st.set_page_config(page_title="PDF to Word Myanmar", layout="wide")
-st.title("🇲🇲 PDF to Myanmar Word Translator")
+st.set_page_config(page_title="Groq AI Translator", layout="wide")
+st.title("🚀 Groq AI PDF Myanmar Translator")
 
-uploaded_file = st.file_uploader("PDF ဖိုင်ရွေးပါ", type="pdf")
+# Groq API Key ထည့်ရန်
+api_key = st.text_input("Groq API Key ထည့်ပါ (VPN မလိုပါ)", type="password")
 
-if uploaded_file:
-    if st.button("ဘာသာပြန်မည်"):
-        translator = Translator()
+if api_key:
+    client = Groq(api_key=api_key)
+    uploaded_file = st.file_uploader("PDF ဖိုင်ရွေးပါ", type="pdf")
+
+    if uploaded_file and st.button("AI ဖြင့် ဘာသာပြန်မည်"):
         pdf_reader = PyPDF2.PdfReader(uploaded_file)
         doc = Document()
         
@@ -19,31 +22,29 @@ if uploaded_file:
         num_pages = len(pdf_reader.pages)
         
         for i in range(num_pages):
-            page = pdf_reader.pages[i]
-            text = page.extract_text()
+            text = pdf_reader.pages[i].extract_text()
             if text:
                 try:
-                    res = translator.translate(text, src='en', dest='my')
-                    result = res.text
-                except:
-                    result = text
-                
-                # စာမျက်နှာအလိုက် ခေါင်းစဉ်တပ်ခြင်း
-                p = doc.add_paragraph()
-                p.add_run(f"--- Page {i+1} ---").bold = True
-                # ဘာသာပြန်စာသား ထည့်ခြင်း
-                doc.add_paragraph(result)
+                    # Groq AI ကို ဘာသာပြန်ခိုင်းခြင်း
+                    completion = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[
+                            {"role": "system", "content": "You are a professional translator. Translate English to Myanmar language naturally and fluently."},
+                            {"role": "user", "content": f"Translate this: {text}"}
+                        ],
+                    )
+                    result = completion.choices[0].message.content
+                    
+                    doc.add_heading(f'Page {i+1}', level=1)
+                    doc.add_paragraph(result)
+                except Exception as e:
+                    st.error(f"Error: {e}")
             
             bar.progress((i + 1) / num_pages)
         
-        # Word File ပြင်ဆင်ခြင်း
         bio = BytesIO()
         doc.save(bio)
-        
         st.success("ဘာသာပြန်ခြင်း ပြီးပါပြီ!")
-        st.download_button(
-            label="Word ဖိုင်ကို ရယူရန် (Download)",
-            data=bio.getvalue(),
-            file_name="translated_myanmar.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
+        st.download_button("Word ဖိုင်ရယူရန်", bio.getvalue(), "groq_translated.docx")
+else:
+    st.info("ဆက်လက်လုပ်ဆောင်ရန် Groq API Key ကို ထည့်ပေးပါ")
