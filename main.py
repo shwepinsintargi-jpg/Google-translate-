@@ -7,7 +7,6 @@ from io import BytesIO
 # ၁။ UI ပိုင်း ပြင်ဆင်ခြင်း
 st.set_page_config(page_title="AI PDF Translator", layout="wide")
 
-# CSS ဖြင့် အလှဆင်ခြင်း (အမှားပြင်ဆင်ပြီး)
 st.markdown("""
     <style>
     .stApp {
@@ -36,8 +35,8 @@ st.markdown('<p class="vpn-warning">⚠️ မြန်မာနိုင်င�
 def translate_with_gemini(text, key):
     try:
         genai.configure(api_key=key)
-        # Model နာမည်ကို models/ ထည့်၍ ပြင်ဆင်ခြင်း
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        # Model နာမည်ကို gemini-1.5-flash ဟုသာ ပြင်ဆင်ခြင်း
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
         prompt = (
             f"You are a professional English-to-Myanmar translator. "
@@ -66,7 +65,7 @@ if gemini_key:
             if text:
                 result = translate_with_gemini(text, gemini_key)
                 
-                # Word ထဲသို့ စာမျက်နှာခေါင်းစဉ်နှင့် အဖြေထည့်ခြင်း
+                # Word ထဲသို့ အဖြေထည့်ခြင်း
                 p = doc.add_paragraph()
                 run = p.add_run(f"--- Page {i+1} ---")
                 run.bold = True
