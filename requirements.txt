@@ -1,4 +1,4 @@
 streamlit
-googletrans-py
+requests
 PyPDF2
 python-docx
