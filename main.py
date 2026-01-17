@@ -8,69 +8,72 @@ import json
 import re
 
 # --- Page Config ---
-st.set_page_config(page_title="Pro AI Translator", layout="centered")
+st.set_page_config(page_title="AI Translator Pro", layout="centered")
 
-# --- Custom CSS (Minimalist Black & White Theme) ---
+# --- Custom CSS (Pure White Background & Black Text) ---
 st.markdown("""
     <style>
-    /* Global Background & Font Settings */
-    .main { background-color: #FFFFFF !important; }
-    .block-container { max-width: 500px; padding-top: 2rem; font-size: 14px; }
+    /* တစ်ပြင်လုံးကို အဖြူရောင်ပြောင်းခြင်း */
+    .stApp {
+        background-color: #FFFFFF !important;
+    }
     
-    /* Genre Title Style */
-    .genre-title {
-        display: inline-block;
-        font-size: 18px;
-        font-weight: bold;
-        color: #000000 !important;
-        margin-bottom: 5px;
+    .main .block-container {
+        max-width: 500px;
+        padding-top: 1rem;
     }
 
-    /* Minimalist File Uploader (Light Gray Background) */
-    .stFileUploader section {
-        background-color: #F8F9FA !important; 
-        border: 1px solid #DEE2E6 !important;
-        border-radius: 8px;
-        padding: 10px;
+    /* စာသားအားလုံးကို အနက်ရောင်ပြောင်းခြင်း */
+    h1, h2, h3, p, span, label, .stMarkdown {
+        color: #000000 !important;
+        font-family: 'Pyidaungsu', sans-serif;
+    }
+
+    /* Dropdown Box (Selectbox) Styling */
+    .stSelectbox div[data-baseweb="select"] {
+        background-color: #FFFFFF !important;
+        border: 1.5px solid #000000 !important;
     }
     
-    /* Change Browse Files Button Text to Myanmar */
+    /* File Uploader - အဖြူရောင်နောက်ခံနှင့် အနက်ရောင်အစင်းကြောင်း */
+    .stFileUploader section {
+        background-color: #FFFFFF !important;
+        border: 1.5px dashed #000000 !important;
+        border-radius: 0px !important; /* လေးထောင့်ကျကျ ပိုဆန်စေရန် */
+    }
+
+    /* File Uploader ခလုတ်ကို အနက်ရောင်ပြောင်းခြင်း */
     .stFileUploader section button {
-        font-size: 0 !important;
         background-color: #000000 !important;
         color: #FFFFFF !important;
-        border-radius: 5px;
+        border: none !important;
+        font-size: 0 !important;
     }
     .stFileUploader section button::after {
         content: "ဖိုင်တင်ရန်";
         font-size: 14px !important;
         color: #FFFFFF !important;
     }
-    
-    /* Labels & Text Color Consistency */
-    label, p, span, .stMarkdown {
-        color: #000000 !important;
-        font-weight: 500;
-    }
 
-    /* Main Action Button (Solid Black) */
-    .stButton>button { 
-        width: 100%; 
-        border-radius: 8px; 
-        font-weight: bold; 
-        height: 3em; 
-        background-color: #000000 !important; 
+    /* စတင်ဘာသာပြန်ပါ ခလုတ် - အနက်ရောင် */
+    .stButton>button {
+        width: 100%;
+        background-color: #000000 !important;
         color: #FFFFFF !important;
-        border: none;
-        transition: 0.3s;
+        border-radius: 0px !important;
+        font-weight: bold;
+        height: 3em;
+        border: 1px solid #000000 !important;
     }
-    .stButton>button:hover {
-        background-color: #333333 !important;
-    }
-
-    /* Progress Bar Color (Dark Gray) */
+    
+    /* Progress Bar ကို အနက်ရောင်ပြောင်းခြင်း */
     .stProgress > div > div > div > div {
         background-color: #000000 !important;
+    }
+
+    /* Divider ကို အနက်ရောင်ပါးပါးပြောင်းခြင်း */
+    hr {
+        border-top: 1px solid #000000 !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -105,17 +108,18 @@ GLOSSARY_FILES = {
     "သိပ္ပံ": "glossary_science.json"
 }
 
-# 1. Genre Selection
-st.markdown("<p class='genre-title'>📖 စာပေအမျိုးအစားရွေးရန်</p>", unsafe_allow_html=True)
+# 1. Title
+st.markdown("### 📖 စာပေအမျိုးအစားရွေးရန်")
 selected_genre = st.selectbox("", list(GLOSSARY_FILES.keys()), label_visibility="collapsed")
 
-# 2. File Upload Area
+# 2. File Upload
 st.markdown("<br>", unsafe_allow_html=True)
 uploaded_file = st.file_uploader("ဘာသာပြန်မည့် file တင်ပါ", type="pdf")
 
 if uploaded_file:
-    st.markdown(f"<p style='color:#333333; font-weight:bold; font-size:13px;'>📄 ဖိုင်အမည်: {uploaded_file.name}</p>", unsafe_allow_html=True)
-    st.divider()
+    # ဖိုင်တင်ပြီးသွားလျှင် အနက်ရောင်စာသားဖြင့်ပြခြင်း
+    st.markdown(f"**📄 ဖိုင်အမည်:** {uploaded_file.name}")
+    st.markdown("---")
     
     if st.button("စတင်ဘာသာပြန်ပါ"):
         with st.status("ဘာသာပြန်နေပါသည်...", expanded=True) as status:
@@ -156,4 +160,5 @@ if uploaded_file:
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
 else:
+    # ဖိုင်မတင်ရသေးခင် အနက်ရောင် Progress Bar အလွတ်ပြထားမည်
     st.progress(0)
