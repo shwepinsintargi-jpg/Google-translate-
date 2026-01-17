@@ -5,53 +5,61 @@ from docx import Document
 from io import BytesIO
 import re
 import time
+import json # JSON ဖိုင်ဖတ်ရန် ထပ်တိုးထားသည်
 
-st.set_page_config(page_title="Stable PDF Translator", layout="centered")
-st.title("English to Myanmar (Slow & Stable)")
-
-def smart_translate(text):
+# ၁။ JSON ဖိုင်မှ Glossary ကို ဖတ်ယူခြင်း
+def load_glossary():
     try:
-        # စာကြောင်းအလိုက် ခွဲထုတ်ခြင်း
+        with open('glossary.json', 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except:
+        return {}
+
+def apply_glossary(text, glossary):
+    for wrong_word, correct_word in glossary.items():
+        # စာလုံးအကြီးအသေးမရွေး ရှာပြီး အစားထိုးရန်
+        pattern = re.compile(re.escape(wrong_word), re.IGNORECASE)
+        text = pattern.sub(correct_word, text)
+    return text
+
+# --- ဘာသာပြန် Function ---
+def smart_translate(text, glossary):
+    try:
         sentences = re.split(r'(?<=[.!?]) +', text.replace('\n', ' '))
         translator = GoogleTranslator(source='en', target='my')
         
         translated_sentences = []
         for sentence in sentences:
             if sentence.strip():
-                # တစ်ကြောင်းချင်းစီ ဘာသာပြန်ခြင်း
                 res = translator.translate(sentence.strip())
+                # Glossary ဖြင့် စစ်ဆေးပြင်ဆင်ခြင်း
+                res = apply_glossary(res, glossary)
                 translated_sentences.append(res)
-                # စာကြောင်းတစ်ကြောင်းပြန်ပြီးတိုင်း 0.5 စက္ကန့် ခဏနားခြင်း (Slow Translation)
-                time.sleep(0.5) 
+                time.sleep(0.3) 
         
         return " ".join(translated_sentences)
     except Exception as e:
         return f"Error: {str(e)}"
 
+# --- UI ပိုင်း ---
+st.title("Pro AI Translator (with JSON Glossary)")
+glossary = load_glossary()
+
 uploaded_file = st.file_uploader("📄 PDF တင်ပါ", type="pdf")
-
 if uploaded_file and st.button("🚀 ဘာသာပြန်မည်"):
-    try:
-        pdf_reader = PyPDF2.PdfReader(uploaded_file)
-        doc = Document()
-        num_pages = len(pdf_reader.pages)
-        bar = st.progress(0)
-        status = st.empty()
-        
-        for i in range(num_pages):
-            status.text(f"⏳ စာမျက်နှာ {i+1} ကို အသေးစိတ် ဘာသာပြန်နေပါသည်...")
-            page_text = pdf_reader.pages[i].extract_text()
-            if page_text and page_text.strip():
-                result = smart_translate(page_text)
-                doc.add_heading(f"Page {i+1}", level=2)
-                doc.add_paragraph(result)
-            bar.progress((i + 1) / num_pages)
-            # စာမျက်နှာတစ်ခုပြီးတိုင်း ၁ စက္ကန့် ထပ်နားခြင်း
-            time.sleep(1)
-
-        bio = BytesIO()
-        doc.save(bio)
-        status.success("✅ အောင်မြင်စွာ ဘာသာပြန်ဆိုပြီးပါပြီ!")
-        st.download_button("📥 Word ဖိုင်ရယူရန်", bio.getvalue(), "Stable_Translated.docx")
-    except Exception as e:
-        st.error(f"Error: {e}")
+    pdf_reader = PyPDF2.PdfReader(uploaded_file)
+    doc = Document()
+    bar = st.progress(0)
+    
+    for i in range(len(pdf_reader.pages)):
+        text = pdf_reader.pages[i].extract_text()
+        if text:
+            result = smart_translate(text, glossary)
+            doc.add_heading(f"Page {i+1}", level=2)
+            doc.add_paragraph(result)
+        bar.progress((i + 1) / len(pdf_reader.pages))
+    
+    bio = BytesIO()
+    doc.save(bio)
+    st.success("ဘာသာပြန်ခြင်း ပြီးပါပြီ!")
+    st.download_button("📥 Word ရယူရန်", bio.getvalue(), "Pro_Translated.docx")
