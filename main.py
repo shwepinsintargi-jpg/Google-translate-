@@ -19,7 +19,7 @@ st.markdown('<p class="main-title">English PDF To Myanmar</p>', unsafe_allow_htm
 
 # API Key Box
 gemini_key = st.text_input("Google API Key ကို ထည့်ပါ", type="password")
-st.markdown('<p class="vpn-warning">⚠️ မြန်မာနိုင်ငံမှ အသုံးပြုပါက USA သို့မဟုတ် Singapore VPN ဖွင့်ပေးပါရန်</p>', unsafe_allow_html=True)
+st.markdown('<p class="vpn-warning">⚠️ မြန်မာနိုင်ငံမှ အသုံးပြုပါက USA သို့မဟုတ် Singapore VPN ဖွင့်ပေးပါ</p>', unsafe_allow_html=True)
 
 def translate_with_gemini(text, key):
     try:
