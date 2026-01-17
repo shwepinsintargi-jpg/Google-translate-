@@ -1,5 +1,5 @@
 import streamlit as st
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 import PyPDF2
 from docx import Document
 from io import BytesIO
@@ -14,15 +14,13 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.markdown('<p class="main-title">English PDF To Myanmar (Google Translate)</p>', unsafe_allow_html=True)
-
-translator = Translator()
+st.markdown('<p class="main-title">English PDF To Myanmar (Stable Version)</p>', unsafe_allow_html=True)
 
 def translate_text(text):
     try:
-        # စာသားအရမ်းရှည်ရင် Google Translate က လက်မခံတတ်လို့ စာကြောင်းခွဲပြီး ပြန်ပေးပါမယ်
-        translated = translator.translate(text, src='en', dest='my')
-        return translated.text
+        # Google Translate engine ကို deep-translator မှတဆင့် သုံးခြင်း (ပိုငြိမ်ပါသည်)
+        translated = GoogleTranslator(source='en', target='my').translate(text)
+        return translated
     except Exception as e:
         return f"Error: {str(e)}"
 
@@ -40,7 +38,7 @@ if uploaded_file and st.button("ဘာသာပြန်မည်"):
         for i in range(num_pages):
             text = pdf_reader.pages[i].extract_text()
             if text:
-                # Google Translate ဖြင့် ဘာသာပြန်ခြင်း
+                # ဘာသာပြန်ခြင်း
                 result = translate_text(text)
                 
                 doc.add_heading(f"Page {i+1}", level=2)
@@ -48,14 +46,13 @@ if uploaded_file and st.button("ဘာသာပြန်မည်"):
             
             bar.progress((i + 1) / num_pages)
         
-        # Word File အဖြစ် ထုတ်ပေးခြင်း
         bio = BytesIO()
         doc.save(bio)
         st.success("ဘာသာပြန်ခြင်း ပြီးပါပြီ!")
         st.download_button(
             label="Word ဖိုင်ရယူရန်",
             data=bio.getvalue(),
-            file_name="Translated_Google.docx",
+            file_name="Translated_Final.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
     except Exception as e:
