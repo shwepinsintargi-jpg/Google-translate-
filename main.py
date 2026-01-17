@@ -10,80 +10,78 @@ import re
 # --- Page Config ---
 st.set_page_config(page_title="Pro AI Translator", layout="centered")
 
-# --- Custom CSS (Fixed Layout & Professional UI) ---
+# --- Custom CSS (Minimalist Black & White Theme) ---
 st.markdown("""
     <style>
-    /* Fixed Layout & Global Font Size */
-    .main .block-container { max-width: 500px; padding-top: 1rem; font-size: 14px; }
+    /* Global Background & Font Settings */
+    .main { background-color: #FFFFFF !important; }
+    .block-container { max-width: 500px; padding-top: 2rem; font-size: 14px; }
     
     /* Genre Title Style */
     .genre-title {
         display: inline-block;
         font-size: 18px;
         font-weight: bold;
-        margin-bottom: 0px;
-        white-space: nowrap;
-        color: #1E1E1E !important;
+        color: #000000 !important;
+        margin-bottom: 5px;
     }
 
-    /* File Uploader အစိမ်းနုရောင် နောက်ခံ နှင့် စာသားများ */
+    /* Minimalist File Uploader (Light Gray Background) */
     .stFileUploader section {
-        background-color: #D1FFD7 !important; 
-        border: 2px dashed #2E86C1 !important;
-        border-radius: 10px;
-        padding: 5px;
+        background-color: #F8F9FA !important; 
+        border: 1px solid #DEE2E6 !important;
+        border-radius: 8px;
+        padding: 10px;
     }
     
-    /* Browse files စာသားကို မြန်မာလို အစားထိုးခြင်း */
+    /* Change Browse Files Button Text to Myanmar */
     .stFileUploader section button {
         font-size: 0 !important;
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
+        border-radius: 5px;
     }
     .stFileUploader section button::after {
         content: "ဖိုင်တင်ရန်";
         font-size: 14px !important;
-        color: white;
+        color: #FFFFFF !important;
     }
     
-    /* Upload Label Color */
-    .stFileUploader label {
-        color: #1A5276 !important; 
-        font-weight: bold;
-        font-size: 15px !important;
-        display: block;
-        margin-bottom: 10px;
+    /* Labels & Text Color Consistency */
+    label, p, span, .stMarkdown {
+        color: #000000 !important;
+        font-weight: 500;
     }
 
-    /* စာသားများ အနက်ရောင်ပြောင်းခြင်း (အဖြူပေါ်တွင် မြင်သာစေရန်) */
-    p, span, label, .stMarkdown {
-        color: #1E1E1E !important;
-    }
-
-    /* Button Style */
+    /* Main Action Button (Solid Black) */
     .stButton>button { 
         width: 100%; 
-        border-radius: 10px; 
+        border-radius: 8px; 
         font-weight: bold; 
-        height: 2.8em; 
-        background-color: #2E86C1; 
-        color: white; 
+        height: 3em; 
+        background-color: #000000 !important; 
+        color: #FFFFFF !important;
+        border: none;
+        transition: 0.3s;
+    }
+    .stButton>button:hover {
+        background-color: #333333 !important;
+    }
+
+    /* Progress Bar Color (Dark Gray) */
+    .stProgress > div > div > div > div {
+        background-color: #000000 !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Formula & Chemical Symbol Protection Logic ---
+# --- Formula & Chemical Protection Logic ---
 def smart_process(text, glossary):
-    # ၁။ သင်္ချာဖော်မြူလာများ သို့မဟုတ် ဓာတုဗေဒသင်္ကေတများ (ဥပမာ- CO2, H2O, O2) ကို ရှာဖွေခြင်း
-    # သင်္ကေတများ (+, -, =, *, /, ^, <, >) သို့မဟုတ် ဂဏန်းပါသော ဓာတုသင်္ကေတများပါလျှင် မူရင်းအတိုင်းထားမည်
     if re.search(r'[=+*/\^<>]', text) or re.search(r'\b[A-Z][a-z]?\d+\b', text):
         return text
-
     try:
-        # ၂။ Google Translate ဖြင့် ဘာသာပြန်ခြင်း
         translated = GoogleTranslator(source='en', target='my').translate(text)
-        
-        # ၃။ Glossary ဖြင့် အချောသတ်ခြင်း
         if glossary:
-            # စကားလုံးအရှည်ဆုံးများကို အရင်အစားထိုးရန်
             sorted_keys = sorted(glossary.keys(), key=len, reverse=True)
             for eng in sorted_keys:
                 pattern = re.compile(re.escape(eng), re.IGNORECASE)
@@ -112,20 +110,18 @@ st.markdown("<p class='genre-title'>📖 စာပေအမျိုးအစာ
 selected_genre = st.selectbox("", list(GLOSSARY_FILES.keys()), label_visibility="collapsed")
 
 # 2. File Upload Area
+st.markdown("<br>", unsafe_allow_html=True)
 uploaded_file = st.file_uploader("ဘာသာပြန်မည့် file တင်ပါ", type="pdf")
 
 if uploaded_file:
-    # ဖိုင်တင်ပြီးသွားလျှင် နာမည်ကို အနက်ရောင်ဖြင့်ပြခြင်း
-    st.markdown(f"<p style='color:#1E1E1E; font-weight:bold; font-size:13px;'>📄 ဖိုင်: {uploaded_file.name}</p>", unsafe_allow_html=True)
-    
-    st.write("---")
+    st.markdown(f"<p style='color:#333333; font-weight:bold; font-size:13px;'>📄 ဖိုင်အမည်: {uploaded_file.name}</p>", unsafe_allow_html=True)
+    st.divider()
     
     if st.button("စတင်ဘာသာပြန်ပါ"):
-        with st.status("Professional Processing...", expanded=True) as status:
+        with st.status("ဘာသာပြန်နေပါသည်...", expanded=True) as status:
             pdf_reader = PyPDF2.PdfReader(uploaded_file)
             doc = Document()
             
-            # Glossary Load
             try:
                 with open(GLOSSARY_FILES[selected_genre], 'r', encoding='utf-8') as f:
                     glossary = json.load(f)
@@ -135,17 +131,13 @@ if uploaded_file:
             progress_bar = st.progress(0)
 
             for i in range(total_pages):
-                st.write(f"➡️ စာမျက်နှာ {i+1} ကို အချောသတ်နေသည်...")
+                st.write(f"➡️ စာမျက်နှာ {i+1} ကို လုပ်ဆောင်နေသည်...")
                 page_text = pdf_reader.pages[i].extract_text()
-
                 if page_text:
-                    # စာကြောင်းများကို ဇယားပုံစံမပျက်စေရန် တစ်ကြောင်းချင်းစီ စစ်ဆေးသည်
                     lines = page_text.split('\n')
                     doc.add_heading(f"Page {i+1}", level=2)
-                    
                     for line in lines:
                         if line.strip():
-                            # Formula & Chemical Protection ပါဝင်သော Logic ကို သုံးသည်
                             processed_line = smart_process(line.strip(), glossary)
                             doc.add_paragraph(processed_line)
                 
@@ -155,15 +147,13 @@ if uploaded_file:
             status.update(label="✅ ဘာသာပြန်ခြင်း ပြီးဆုံးပါပြီ!", state="complete")
             play_notification_sound()
             
-            # Download Button
             bio = BytesIO()
             doc.save(bio)
             st.download_button(
                 label="📥 Word file ဒေါင်းရန်",
                 data=bio.getvalue(),
-                file_name=f"Final_Translated_{selected_genre}.docx",
+                file_name=f"Translated_{selected_genre}.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
 else:
-    # ဖိုင်မတင်ရသေးလျှင် Progress Bar အလွတ်ပြထားမည်
     st.progress(0)
