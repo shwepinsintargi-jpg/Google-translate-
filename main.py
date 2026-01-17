@@ -12,24 +12,24 @@ except:
     st.stop()
 
 st.set_page_config(page_title="AI PDF Translator", layout="centered")
-st.title("AI PDF Translator (Llama 3.3)")
+st.title("AI PDF Translator (Stable Mode)")
 
 def translate_with_groq(text):
     try:
         client = Groq(api_key=GROQ_API_KEY)
-        # အသစ်ထွက်လာသော llama-3.3-70b-versatile ကို အသုံးပြုထားပါသည်
+        # အငြိမ်ဆုံးဖြစ်သော llama3-70b-8192 ကို ပြောင်းလဲအသုံးပြုထားပါသည်
         chat_completion = client.chat.completions.create(
             messages=[
                 {
                     "role": "system", 
-                    "content": "You are a professional English-to-Myanmar translator. Translate fluently and naturally."
+                    "content": "You are a professional English-to-Myanmar translator. Translate naturally and fluently."
                 },
                 {
                     "role": "user", 
-                    "content": f"Translate the following text into natural Myanmar: \n\n{text}"
+                    "content": f"Translate this into Myanmar: \n\n{text}"
                 }
             ],
-            model="llama-3.3-70b-specdec", # လက်ရှိ အသစ်ဆုံးနှင့် အမြန်ဆုံး Model ဖြစ်သည်
+            model="llama3-70b-8192", 
         )
         return chat_completion.choices[0].message.content
     except Exception as e:
@@ -44,7 +44,7 @@ if uploaded_file and st.button("🚀 ဘာသာပြန်မည်"):
         num_pages = len(pdf_reader.pages)
         bar = st.progress(0)
         
-        st.info("AI ဘာသာပြန်နေပါသည်။ ခဏစောင့်ပေးပါ (VPN မလိုပါ)...")
+        st.info("AI ဘာသာပြန်နေပါသည်။ ခဏစောင့်ပေးပါ...")
         
         for i in range(num_pages):
             page_text = pdf_reader.pages[i].extract_text()
