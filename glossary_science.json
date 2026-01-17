@@ -48,5 +48,18 @@
     "Mechanism": "ယန္တရား (Mechanism)",
     "Structure": "ဖွဲ့စည်းပုံ",
     "Function": "လုပ်ဆောင်ချက်",
-    "Discovery": "ရှာဖွေတွေ့ရှိမှု"
+    "Discovery": "ရှာဖွေတွေ့ရှိမှု",
+    "Degree Celsius": "ဒီဂရီ စင်တီဂရိတ်",
+    "Millimeter": "မီလီမီတာ",
+    "Centimeter": "စင်တီမီတာ",
+    "Kilogram": "ကီလိုဂရမ်",
+    "Solution": "ပျော်ရည်",
+    "Liquid": "အရည်",
+    "Solid": "အစိုင်အခဲ",
+    "Gaseous": "ဓာတ်ငွေ့အခြေအနေ",
+    "Vacuum": "လေဟာနယ်",
+    "Radiation": "ရောင်ခြည်ဖြာထွက်ခြင်း",
+    "Microscope": "အဏုကြည့်မှန်ပြောင်း"
 }
+
+
