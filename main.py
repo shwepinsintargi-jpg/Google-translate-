@@ -1,101 +1,69 @@
 import streamlit as st
-from deep_translator import GoogleTranslator
+import google.generativeai as genai
 import PyPDF2
 from docx import Document
 from io import BytesIO
-import time
 import json
-import re
+
+# --- Gemini Configuration (Secure Method) ---
+try:
+    # Streamlit Cloud Settings > Secrets ထဲမှ GEMINI_API_KEY ကို ဖတ်ခြင်း
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+    genai.configure(api_key=API_KEY)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+except Exception as e:
+    st.error("⚠️ API Key ကို Streamlit Secrets မှာ မတွေ့ရသေးပါ။ ကျေးဇူးပြု၍ Settings တွင် အရင်ထည့်ပေးပါ။")
+    st.stop()
 
 # --- Page Config ---
-st.set_page_config(page_title="AI Translator Pro", layout="centered")
+st.set_page_config(page_title="AI Pro Translator", layout="centered")
 
-# --- Custom CSS (Pure White & Black with Fixed Layout) ---
+# --- Custom CSS (Pure White & Black Theme) ---
 st.markdown("""
     <style>
     .stApp { background-color: #FFFFFF !important; }
-    .main .block-container { max-width: 500px; padding-top: 1rem; }
-
-    /* စာပေအမျိုးအစားရွေးရန် နှင့် Dropdown ကို တစ်တန်းတည်းထားခြင်း */
-    .flex-container {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 15px;
-    }
-    .genre-label {
-        font-size: 16px;
-        font-weight: bold;
-        color: #000000 !important;
-        white-space: nowrap;
-    }
-
-    /* စာသားအရောင်များ */
-    h3, p, span, label, .stMarkdown { color: #000000 !important; }
-
-    /* File Uploader Style */
-    .stFileUploader section {
-        background-color: #FFFFFF !important;
-        border: 1.5px dashed #000000 !important;
-        border-radius: 5px;
-    }
-
-    /* File Uploader Button */
-    .stFileUploader section button {
-        background-color: #000000 !important;
-        color: #FFFFFF !important;
-        font-size: 0 !important;
-    }
-    .stFileUploader section button::after {
-        content: "ဖိုင်တင်ရန်";
-        font-size: 14px !important;
-        color: #FFFFFF !important;
-    }
-
-    /* --- ဘာသာပြန်ရန်ခလုတ် ပြင်ဆင်ချက် --- */
-    .stButton>button {
-        width: 100%;
-        background-color: #000000 !important; /* နောက်ခံအနက် */
-        color: #FFFFFF !important;           /* စာသားအဖြူ (သေချာပေါက်ပေါ်စေရန်) */
-        border-radius: 5px !important;
-        font-weight: bold !important;
-        height: 3.2em;
-        border: none !important;
-        font-size: 16px !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-    }
+    .main .block-container { max-width: 550px; padding-top: 2rem; }
+    h3, p, span, label, .stMarkdown { color: #000000 !important; font-family: 'Pyidaungsu', sans-serif; }
     
-    /* ခလုတ်ပေါ်က စာသားကို Force လုပ်ပြီး အဖြူရောင်ပြောင်းခြင်း */
-    .stButton>button p {
-        color: #FFFFFF !important;
-        margin: 0 !important;
+    .stSelectbox div[data-baseweb="select"] { border: 1.5px solid #000000 !important; border-radius: 5px; }
+    .stFileUploader section { background-color: #FFFFFF !important; border: 1.5px dashed #000000 !important; border-radius: 8px; }
+    
+    .stButton>button {
+        width: 100%; background-color: #000000 !important; color: #FFFFFF !important;
+        border-radius: 8px !important; font-weight: bold !important; height: 3.5em; border: none !important;
+        transition: 0.3s;
     }
-
+    .stButton>button:hover { background-color: #333333 !important; }
+    .stButton>button p { color: #FFFFFF !important; margin: 0 !important; font-size: 16px; }
     .stProgress > div > div > div > div { background-color: #000000 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Process Logic ---
-def smart_process(text, glossary):
-    if re.search(r'[=+*/\^<>]', text) or re.search(r'\b[A-Z][a-z]?\d+\b', text):
-        return text
+# --- AI Translation Function ---
+def ai_translate(text, glossary_data, genre):
+    glossary_str = json.dumps(glossary_data, ensure_ascii=False)
+    
+    prompt = f"""
+    You are a professional Myanmar translator specializing in {genre}. 
+    Translate the following English text to Myanmar.
+
+    GUIDELINES:
+    1. STRICTLY use these terms if they appear in the text: {glossary_str}
+    2. Keep chemical formulas (e.g., H2O, CO2), mathematical symbols, and numbers in English.
+    3. Ensure the Myanmar translation flows naturally and is contextually correct for {genre}.
+    4. Provide ONLY the translated Myanmar text.
+
+    Text:
+    {text}
+    """
+    
     try:
-        translated = GoogleTranslator(source='en', target='my').translate(text)
-        if glossary:
-            sorted_keys = sorted(glossary.keys(), key=len, reverse=True)
-            for eng in sorted_keys:
-                pattern = re.compile(re.escape(eng), re.IGNORECASE)
-                translated = pattern.sub(glossary[eng], translated)
-        return translated
-    except: return text
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except:
+        return "ဘာသာပြန်ရာတွင် အမှားအယွင်းရှိနေပါသည်။"
 
-def play_notification_sound():
-    sound_url = "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"
-    sound_html = f"<audio autoplay><source src='{sound_url}' type='audio/mp3'></audio>"
-    st.components.v1.html(sound_html, height=0)
-
+# --- UI Setup ---
 GLOSSARY_FILES = {
     "ရိုးရိုးဝတ္ထု": "glossary_novel.json",
     "အက်ရှင်": "glossary_action.json",
@@ -104,32 +72,30 @@ GLOSSARY_FILES = {
     "သိပ္ပံ": "glossary_science.json"
 }
 
-# --- UI Setup ---
-
-# ၁။ စာပေအမျိုးအစားကို တစ်တန်းတည်းထားခြင်း
+# စာပေအမျိုးအစားရွေးရန် (တစ်တန်းတည်းထားခြင်း)
 col1, col2 = st.columns([1.2, 1])
 with col1:
     st.markdown("<p style='margin-top:10px; font-weight:bold;'>📖 စာပေအမျိုးအစားရွေးချယ်ရန်</p>", unsafe_allow_html=True)
 with col2:
     selected_genre = st.selectbox("", list(GLOSSARY_FILES.keys()), label_visibility="collapsed")
 
-# ၂။ File Upload
-uploaded_file = st.file_uploader("ဘာသာပြန်မည့် file တင်ပါ", type="pdf")
+uploaded_file = st.file_uploader("ဘာသာပြန်မည့် PDF file တင်ပါ", type="pdf")
 
 if uploaded_file:
     st.markdown(f"**📄 ဖိုင်အမည်:** {uploaded_file.name}")
     st.write("---")
     
-    # ၃။ ဘာသာပြန်ခလုတ် (စာသားသေချာပေါ်အောင် လုပ်ထားသည်)
     if st.button("စတင်ဘာသာပြန်ပါ"):
-        with st.status("ဘာသာပြန်နေပါသည်...", expanded=True) as status:
+        with st.status("Gemini AI ဖြင့် အဆင့်မြင့်ဘာသာပြန်နေပါသည်...", expanded=True) as status:
             pdf_reader = PyPDF2.PdfReader(uploaded_file)
             doc = Document()
             
+            # Glossary ဖတ်ခြင်း
             try:
                 with open(GLOSSARY_FILES[selected_genre], 'r', encoding='utf-8') as f:
                     glossary = json.load(f)
-            except: glossary = {}
+            except:
+                glossary = {}
 
             total_pages = len(pdf_reader.pages)
             progress_bar = st.progress(0)
@@ -137,26 +103,23 @@ if uploaded_file:
             for i in range(total_pages):
                 st.write(f"➡️ စာမျက်နှာ {i+1} ကို လုပ်ဆောင်နေသည်...")
                 page_text = pdf_reader.pages[i].extract_text()
+                
                 if page_text:
-                    lines = page_text.split('\n')
+                    # Gemini ကို စာမျက်နှာအလိုက် ပို့ခြင်း
+                    translated_page = ai_translate(page_text, glossary, selected_genre)
                     doc.add_heading(f"Page {i+1}", level=2)
-                    for line in lines:
-                        if line.strip():
-                            processed_line = smart_process(line.strip(), glossary)
-                            doc.add_paragraph(processed_line)
+                    doc.add_paragraph(translated_page)
                 
                 progress_bar.progress((i + 1) / total_pages)
-                time.sleep(0.05)
 
             status.update(label="✅ ဘာသာပြန်ခြင်း ပြီးဆုံးပါပြီ!", state="complete")
-            play_notification_sound()
             
             bio = BytesIO()
             doc.save(bio)
             st.download_button(
                 label="📥 Word file ဒေါင်းရန်",
                 data=bio.getvalue(),
-                file_name=f"Translated_{selected_genre}.docx",
+                file_name=f"AI_Translated_{selected_genre}.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
 else:
