@@ -39,7 +39,7 @@ def ai_translate(text):
                     "content": f"Translate this text to Myanmar: \n\n {text}"
                 }
             ],
-            model="llama-3.1-70b-versatile", # Gemini Pro နဲ့ တန်းတူရည်တူရှိသော model ဖြစ်သည်
+            model="llama-3.3-70b-versatile", # Gemini Pro နဲ့ တန်းတူရည်တူရှိသော model ဖြစ်သည်
             temperature=0.3, # တိကျမှုရှိစေရန်
         )
         return chat_completion.choices[0].message.content.strip()
