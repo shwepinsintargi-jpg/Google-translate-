@@ -71,7 +71,8 @@ GLOSSARY_FILES = {
     "ရိုးရိုးဝတ္ထု": "glossary_novel.json",
     "အက်ရှင်": "glossary_action.json",
     "အထွေထွေ": "glossary_general.json",
-    "သင်္ချာ": "glossary_math.json"
+    "သင်္ချာ": "glossary_math.json",
+"သိပ္ပံ": "glossary_science.json"
 }
 
 # --- UI Layout ---
