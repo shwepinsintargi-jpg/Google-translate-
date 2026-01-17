@@ -10,43 +10,40 @@ import re
 # --- Page Config ---
 st.set_page_config(page_title="AI Translator Pro", layout="centered")
 
-# --- Custom CSS (Pure White Background & Black Text) ---
+# --- Custom CSS (Pure White & Black with Fixed Layout) ---
 st.markdown("""
     <style>
-    /* တစ်ပြင်လုံးကို အဖြူရောင်ပြောင်းခြင်း */
-    .stApp {
-        background-color: #FFFFFF !important;
-    }
-    
-    .main .block-container {
-        max-width: 500px;
-        padding-top: 1rem;
-    }
+    .stApp { background-color: #FFFFFF !important; }
+    .main .block-container { max-width: 500px; padding-top: 1rem; }
 
-    /* စာသားအားလုံးကို အနက်ရောင်ပြောင်းခြင်း */
-    h1, h2, h3, p, span, label, .stMarkdown {
+    /* စာပေအမျိုးအစားရွေးရန် နှင့် Dropdown ကို တစ်တန်းတည်းထားခြင်း */
+    .flex-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    .genre-label {
+        font-size: 16px;
+        font-weight: bold;
         color: #000000 !important;
-        font-family: 'Pyidaungsu', sans-serif;
+        white-space: nowrap;
     }
 
-    /* Dropdown Box (Selectbox) Styling */
-    .stSelectbox div[data-baseweb="select"] {
-        background-color: #FFFFFF !important;
-        border: 1.5px solid #000000 !important;
-    }
-    
-    /* File Uploader - အဖြူရောင်နောက်ခံနှင့် အနက်ရောင်အစင်းကြောင်း */
+    /* စာသားအရောင်များ */
+    h3, p, span, label, .stMarkdown { color: #000000 !important; }
+
+    /* File Uploader Style */
     .stFileUploader section {
         background-color: #FFFFFF !important;
         border: 1.5px dashed #000000 !important;
-        border-radius: 0px !important; /* လေးထောင့်ကျကျ ပိုဆန်စေရန် */
+        border-radius: 5px;
     }
 
-    /* File Uploader ခလုတ်ကို အနက်ရောင်ပြောင်းခြင်း */
+    /* File Uploader Button */
     .stFileUploader section button {
         background-color: #000000 !important;
         color: #FFFFFF !important;
-        border: none !important;
         font-size: 0 !important;
     }
     .stFileUploader section button::after {
@@ -55,30 +52,32 @@ st.markdown("""
         color: #FFFFFF !important;
     }
 
-    /* စတင်ဘာသာပြန်ပါ ခလုတ် - အနက်ရောင် */
+    /* --- ဘာသာပြန်ရန်ခလုတ် ပြင်ဆင်ချက် --- */
     .stButton>button {
         width: 100%;
-        background-color: #000000 !important;
-        color: #FFFFFF !important;
-        border-radius: 0px !important;
-        font-weight: bold;
-        height: 3em;
-        border: 1px solid #000000 !important;
+        background-color: #000000 !important; /* နောက်ခံအနက် */
+        color: #FFFFFF !important;           /* စာသားအဖြူ (သေချာပေါက်ပေါ်စေရန်) */
+        border-radius: 5px !important;
+        font-weight: bold !important;
+        height: 3.2em;
+        border: none !important;
+        font-size: 16px !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
     }
     
-    /* Progress Bar ကို အနက်ရောင်ပြောင်းခြင်း */
-    .stProgress > div > div > div > div {
-        background-color: #000000 !important;
+    /* ခလုတ်ပေါ်က စာသားကို Force လုပ်ပြီး အဖြူရောင်ပြောင်းခြင်း */
+    .stButton>button p {
+        color: #FFFFFF !important;
+        margin: 0 !important;
     }
 
-    /* Divider ကို အနက်ရောင်ပါးပါးပြောင်းခြင်း */
-    hr {
-        border-top: 1px solid #000000 !important;
-    }
+    .stProgress > div > div > div > div { background-color: #000000 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Formula & Chemical Protection Logic ---
+# --- Process Logic ---
 def smart_process(text, glossary):
     if re.search(r'[=+*/\^<>]', text) or re.search(r'\b[A-Z][a-z]?\d+\b', text):
         return text
@@ -90,16 +89,13 @@ def smart_process(text, glossary):
                 pattern = re.compile(re.escape(eng), re.IGNORECASE)
                 translated = pattern.sub(glossary[eng], translated)
         return translated
-    except:
-        return text
+    except: return text
 
-# --- Sound Function ---
 def play_notification_sound():
     sound_url = "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"
     sound_html = f"<audio autoplay><source src='{sound_url}' type='audio/mp3'></audio>"
     st.components.v1.html(sound_html, height=0)
 
-# --- UI Setup ---
 GLOSSARY_FILES = {
     "ရိုးရိုးဝတ္ထု": "glossary_novel.json",
     "အက်ရှင်": "glossary_action.json",
@@ -108,19 +104,23 @@ GLOSSARY_FILES = {
     "သိပ္ပံ": "glossary_science.json"
 }
 
-# 1. Title
-st.markdown("### 📖 စာပေအမျိုးအစားရွေးရန်")
-selected_genre = st.selectbox("", list(GLOSSARY_FILES.keys()), label_visibility="collapsed")
+# --- UI Setup ---
 
-# 2. File Upload
-st.markdown("<br>", unsafe_allow_html=True)
+# ၁။ စာပေအမျိုးအစားကို တစ်တန်းတည်းထားခြင်း
+col1, col2 = st.columns([1.2, 1])
+with col1:
+    st.markdown("<p style='margin-top:10px; font-weight:bold;'>📖 စာပေအမျိုးအစားရွေးချယ်ရန်</p>", unsafe_allow_html=True)
+with col2:
+    selected_genre = st.selectbox("", list(GLOSSARY_FILES.keys()), label_visibility="collapsed")
+
+# ၂။ File Upload
 uploaded_file = st.file_uploader("ဘာသာပြန်မည့် file တင်ပါ", type="pdf")
 
 if uploaded_file:
-    # ဖိုင်တင်ပြီးသွားလျှင် အနက်ရောင်စာသားဖြင့်ပြခြင်း
     st.markdown(f"**📄 ဖိုင်အမည်:** {uploaded_file.name}")
-    st.markdown("---")
+    st.write("---")
     
+    # ၃။ ဘာသာပြန်ခလုတ် (စာသားသေချာပေါ်အောင် လုပ်ထားသည်)
     if st.button("စတင်ဘာသာပြန်ပါ"):
         with st.status("ဘာသာပြန်နေပါသည်...", expanded=True) as status:
             pdf_reader = PyPDF2.PdfReader(uploaded_file)
@@ -160,5 +160,4 @@ if uploaded_file:
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
 else:
-    # ဖိုင်မတင်ရသေးခင် အနက်ရောင် Progress Bar အလွတ်ပြထားမည်
     st.progress(0)
