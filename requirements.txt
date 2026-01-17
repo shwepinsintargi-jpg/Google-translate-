@@ -1,4 +1,4 @@
 streamlit
-groq
+deep-translator
 PyPDF2
 python-docx
