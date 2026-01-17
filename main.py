@@ -1,5 +1,6 @@
 import streamlit as st
 from groq import Groq
+from googletrans import Translator # အရန် ဘာသာပြန်စနစ်
 import PyPDF2
 from docx import Document
 from io import BytesIO
@@ -8,54 +9,60 @@ import json
 import os
 
 # --- Page Config ---
-st.set_page_config(page_title="Elite PDF Translator", layout="wide")
+st.set_page_config(page_title="Stable PDF Translator", layout="wide")
 
-# --- UI Styling ---
+# --- UI Styling (Fixed Minimalist) ---
 st.markdown("""
     <style>
-    .top-header { position: fixed; top: 0; left: 0; width: 100%; background: white; border-bottom: 1px solid #E2E8F0; padding: 10px; text-align: center; color: #1A365D; font-weight: bold; z-index: 1000; }
-    .main-container { max-width: 600px; margin: auto; padding-top: 80px; }
-    .stProgress > div > div > div > div { background-color: #1A365D !important; }
-    .file-pill { background-color: #F1F5F9; border-left: 5px solid #1A365D; padding: 15px; border-radius: 8px; color: #1A365D; margin-bottom: 20px; text-align: center; }
+    html, body, [data-testid="stAppViewContainer"] { background-color: #FFFFFF !important; overflow: hidden; height: 100vh; }
+    .top-header { position: fixed; top: 0; left: 0; width: 100%; background: white; border-bottom: 1px solid #E2E8F0; padding: 10px; text-align: center; color: #1A365D; font-weight: bold; z-index: 1000; font-size: 14px; }
+    .main-box { max-width: 500px; margin: auto; padding-top: 70px; }
+    .stButton>button { width: 100%; background-color: #1A365D !important; color: white !important; border-radius: 8px !important; font-weight: 600; }
+    .file-pill { background-color: #F8F9FA; border-left: 5px solid #1A365D; padding: 10px; border-radius: 4px; color: #1A365D; margin: 15px 0; font-size: 13px; text-align: center; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Logic: Groq & Teaching Context ---
+# --- Logic Initialization ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+google_translator = Translator()
 
 def get_teaching_context():
     if os.path.exists("teaching_data.json"):
         with open("teaching_data.json", "r", encoding="utf-8") as f:
             data = json.load(f)
-            context = "Focus on this style:\n"
-            for ex in data.get("examples", [])[:5]: # ပထမ ၅ ခုပဲယူပါမယ် (Token သက်သာရန်)
+            context = "Professional style examples:\n"
+            for ex in data.get("examples", [])[:3]:
                 context += f"EN: {ex['english']} -> MM: {ex['myanmar']}\n"
             return context
-    return "Translate English to Myanmar professionally."
+    return ""
 
-def ai_translate_with_retry(text, retries=3):
+def hybrid_translate(text):
     teaching_context = get_teaching_context()
-    for attempt in range(retries):
-        try:
-            response = client.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": f"You are a professional translator. {teaching_context}"},
-                    {"role": "user", "content": text}
-                ],
-                model="llama-3.3-70b-versatile",
-                temperature=0.2,
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            if attempt < retries - 1:
-                time.sleep(5) # ၅ စက္ကန့်နားပြီး ပြန်ကြိုးစားမည်
-                continue
-            else:
-                return f"Error: {str(e)}"
+    try:
+        # ၁။ Groq (AI) ဖြင့် အရင်ကြိုးစားမည်
+        response = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": f"You are an elite Myanmar translator. {teaching_context}"},
+                {"role": "user", "content": text}
+            ],
+            model="llama-3.3-70b-versatile",
+            temperature=0.2,
+        )
+        return response.choices[0].message.content.strip(), "Groq AI"
+    
+    except Exception as e:
+        # ၂။ Token Limit ပြည့်လျှင် သို့မဟုတ် Error တက်လျှင် Google Translate သို့ ပြောင်းမည်
+        if "rate_limit" in str(e).lower() or "429" in str(e):
+            try:
+                result = google_translator.translate(text, src='en', dest='my')
+                return result.text, "Google Translate (Backup)"
+            except:
+                return "ဘာသာပြန်ဆို၍ မရပါ (System Busy)", "Error"
+        return f"Error: {str(e)}", "Error"
 
 # --- UI Execution ---
-st.markdown('<div class="top-header">(English PDF မှ မြန်မာဘာသာသို့ - Stable Version)</div>', unsafe_allow_html=True)
-st.markdown('<div class="main-container">', unsafe_allow_html=True)
+st.markdown('<div class="top-header">(English PDF မှ မြန်မာဘာသာသို့ - Hybrid System)</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-box">', unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("", type="pdf", label_visibility="collapsed")
 
@@ -64,42 +71,39 @@ if uploaded_file:
     
     if "doc" not in st.session_state:
         st.session_state.doc = Document()
-        st.session_state.processed_pages = 0
+        st.session_state.processed_count = 0
 
     if st.button("ဘာသာပြန်ခြင်း စတင်မည်"):
         pdf_reader = PyPDF2.PdfReader(uploaded_file)
         total_pages = len(pdf_reader.pages)
         
         prog_bar = st.progress(0)
-        prog_text = st.empty()
+        status_info = st.empty()
         
-        for i in range(st.session_state.processed_pages, total_pages):
+        for i in range(st.session_state.processed_count, total_pages):
             page_text = pdf_reader.pages[i].extract_text()
-            
             if page_text.strip():
-                # စာမျက်နှာအလိုက် Delay ပေးခြင်း (Rate Limit ကာကွယ်ရန်)
-                time.sleep(1.2)
+                time.sleep(1) # API Stability
+                translated_text, engine = hybrid_translate(page_text)
                 
-                translated = ai_translate_with_retry(page_text)
                 st.session_state.doc.add_heading(f"Page {i+1}", level=2)
-                st.session_state.doc.add_paragraph(translated)
-            
-            st.session_state.processed_pages = i + 1
-            percent = int((st.session_state.processed_pages / total_pages) * 100)
-            prog_bar.progress(st.session_state.processed_pages / total_pages)
-            prog_text.markdown(f"<p style='text-align:center;'>အခြေအနေ: စာမျက်နှာ {st.session_state.processed_pages} / {total_pages} ({percent}%)</p>", unsafe_allow_html=True)
+                st.session_state.doc.add_paragraph(translated_text)
+                
+                # အသုံးပြုနေသည့် Engine ကို ပြသရန်
+                status_info.markdown(f"<p style='text-align:center; font-size:12px;'>Using: <b>{engine}</b> for Page {i+1}</p>", unsafe_allow_html=True)
 
-        st.success("ဘာသာပြန်ခြင်း အောင်မြင်စွာ ပြီးဆုံးပါပြီ!")
+            st.session_state.processed_count = i + 1
+            prog_bar.progress(st.session_state.processed_count / total_pages)
 
-    # Download Button (အမြဲတမ်း ပေါ်နေမည် - ရသလောက် သိမ်းနိုင်ရန်)
-    if st.session_state.processed_pages > 0:
+        st.success("အားလုံး ပြီးဆုံးပါပြီ။")
+
+    if st.session_state.processed_count > 0:
         bio = BytesIO()
         st.session_state.doc.save(bio)
         st.download_button(
-            label=f"📥 Word ဖိုင်ရယူရန် (စာမျက်နှာ {st.session_state.processed_pages} အထိ)",
+            label=f"📥 Word ဖိုင်ရယူရန် ({st.session_state.processed_count} မျက်နှာစာ)",
             data=bio.getvalue(),
-            file_name=f"Translated_{uploaded_file.name.replace('.pdf', '')}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            file_name=f"Translated_{uploaded_file.name.replace('.pdf', '')}.docx"
         )
 
 st.markdown('</div>', unsafe_allow_html=True)
