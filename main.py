@@ -4,111 +4,103 @@ import PyPDF2
 from docx import Document
 from io import BytesIO
 import time
+import json
+import os
 
 # --- Page Config ---
-st.set_page_config(page_title="Elite PDF Translator", layout="wide")
+st.set_page_config(page_title="Professional PDF Translator", layout="wide")
 
-# --- Luxury Styling (Refined Contrast) ---
+# --- UI Styling (Fixed & High Contrast) ---
 st.markdown("""
     <style>
-    /* Fixed Page Layout */
     html, body, [data-testid="stAppViewContainer"] {
-        background-color: #FAFAFA !important;
-        overflow: hidden;
+        background-color: #FFFFFF !important;
+        overflow: hidden; 
         height: 100vh;
     }
-
-    /* အပေါ်ဆုံးကပ်နေသော ခေါင်းစဉ် (Fixed Header) */
-    .header-bar {
-        position: fixed;
-        top: 0; left: 0; width: 100%;
+    .top-header {
+        position: fixed; top: 0; left: 0; width: 100%;
         background-color: #FFFFFF;
-        border-bottom: 1px solid #EAEAEA;
-        padding: 10px 0;
+        border-bottom: 1px solid #E2E8F0;
+        padding: 8px 0;
         text-align: center;
-        z-index: 1000;
         color: #1A365D;
         font-size: 16px;
         font-weight: 500;
-        letter-spacing: 1px;
+        z-index: 1000;
     }
-
-    /* Main UI Box */
-    .container-box {
-        max-width: 550px;
+    .main-container {
+        max-width: 500px;
         margin: auto;
-        margin-top: 80px; /* Header အောက် ရောက်စေရန် */
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        padding-top: 60px;
     }
-
-    /* File Name Box - သားနားသော ဒီဇိုင်း */
-    .file-pill {
-        background-color: #F1F5F9;
-        border-left: 4px solid #1A365D;
-        padding: 12px;
-        border-radius: 4px;
-        color: #1A365D;
-        font-size: 14px;
-        margin: 15px 0;
-        animation: fadeIn 0.5s ease-in;
-    }
-
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-    /* Custom Button */
     .stButton>button {
+        width: 100%;
         background-color: #1A365D !important;
         color: white !important;
-        border: none !important;
-        padding: 12px !important;
-        font-size: 15px !important;
-        border-radius: 6px !important;
+        border-radius: 8px !important;
+        font-weight: 600;
+    }
+    .file-pill {
+        background-color: #F8F9FA;
+        border-left: 5px solid #1A365D;
+        padding: 10px;
+        border-radius: 4px;
+        color: #1A365D;
+        margin: 15px 0;
+        font-size: 14px;
+        text-align: center;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Logic: Groq & Model Fix ---
+# --- JSON မှ သင်ကြားမှုဒေတာများ ဖတ်ခြင်း ---
+def get_teaching_context():
+    if os.path.exists("teaching_data.json"):
+        with open("teaching_data.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+            context = "Learn from these professional examples:\n"
+            for ex in data.get("examples", []):
+                context += f"English: {ex['english']} -> Myanmar: {ex['myanmar']}\n"
+            context += f"\nRule: {data.get('style_instructions', '')}"
+            return context
+    return "Translate English to Myanmar formally and naturally."
+
+# --- Groq Logic ---
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 def ai_translate(text):
+    teaching_context = get_teaching_context()
     try:
         response = client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "Professional Myanmar Academic Translator. High-end literary tone."},
-                {"role": "user", "content": f"Translate: {text}"}
+                {"role": "system", "content": f"You are an elite Myanmar translator. {teaching_context}"},
+                {"role": "user", "content": f"Translate this PDF content: {text}"}
             ],
-            model="llama-3.3-70b-versatile", # Model Error Fix
+            model="llama-3.3-70b-versatile",
             temperature=0.2,
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
         return f"Error: {str(e)}"
 
-# --- Layout Implementation ---
+# --- UI Execution ---
+st.markdown('<div class="top-header">(English PDF မှ မြန်မာဘာသာသို့)</div>', unsafe_allow_html=True)
 
-# ၁။ ခေါင်းစဉ် (Page အပေါ်ဆုံးတွင် ကပ်လျက်)
-st.markdown('<div class="header-bar">(ENGLISH PDF မှ မြန်မာဘာသာသို့)</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-container">', unsafe_allow_html=True)
 
-st.markdown('<div class="container-box">', unsafe_allow_html=True)
-
-# ၂။ File Uploader
 uploaded_file = st.file_uploader("", type="pdf", label_visibility="collapsed")
 
 if uploaded_file:
-    # ၃။ File Name ပြခြင်း (သားနားသော Pill box ဖြင့်)
     st.markdown(f'<div class="file-pill">📄 {uploaded_file.name}</div>', unsafe_allow_html=True)
     
-    # ၄။ ဘာသာပြန်ရန် Button
     if st.button("ဘာသာပြန်ခြင်း စတင်မည်"):
         pdf_reader = PyPDF2.PdfReader(uploaded_file)
         doc = Document()
         total_pages = len(pdf_reader.pages)
         
-        progress_info = st.empty()
-        p_bar = st.progress(0)
+        prog_text = st.empty()
+        prog_bar = st.progress(0)
         
         for i in range(total_pages):
             text = pdf_reader.pages[i].extract_text()
@@ -118,14 +110,12 @@ if uploaded_file:
                 doc.add_heading(f"Page {i+1}", level=2)
                 doc.add_paragraph(translated)
             
-            # Update Progress
             percent = int(((i + 1) / total_pages) * 100)
-            p_bar.progress((i + 1) / total_pages)
-            progress_info.markdown(f"<p style='text-align:center; font-size:13px;'>ဘာသာပြန်နေမှု: {percent}%</p>", unsafe_allow_html=True)
+            prog_bar.progress((i + 1) / total_pages)
+            prog_text.markdown(f"<p style='text-align:center;'>တိုးတက်မှုအခြေအနေ: {percent}%</p>", unsafe_allow_html=True)
 
-        st.success("ဘာသာပြန်ခြင်း ပြီးမြောက်ပါပြီ။")
+        st.success("ဘာသာပြန်ခြင်း ပြီးမြောက်ပါပြီ!")
         
-        # ၅။ Download Button
         bio = BytesIO()
         doc.save(bio)
         st.download_button(
