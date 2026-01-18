@@ -3,3 +3,4 @@ groq
 PyPDF2
 python-docx
 googletrans==3.1.0a0
+httpx==0.13.3
